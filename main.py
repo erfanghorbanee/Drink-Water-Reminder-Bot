@@ -14,6 +14,10 @@ from aiocron import crontab
 
 from db import (get_user_status, init_db, save_user,
                 update_frequency, update_status)
+from messages import (
+    START_MESSAGE, STOP_MESSAGE, WATER_FACTS, WATER_ARTICLES,
+    REMINDER_MESSAGE, CUSTOM_FREQUENCY_PROMPT, INVALID_FREQUENCY_MESSAGE, KEYBOARD_OPTIONS
+)
 
 # Load environment variables
 load_dotenv()
@@ -48,33 +52,15 @@ async def start_command(message: Message):
 async def stop_command(message: Message):
     chat_id = message.chat.id
     update_status(chat_id, active=0)
-    await message.answer("🚫 Water reminders stopped. Stay hydrated though! 🐾")
+    await message.answer(STOP_MESSAGE)
 
 @dp.message(Command("info"))
 async def info_command(message: Message):
-    water_facts = (
-        "💧 **Staying hydrated helps maintain energy levels and brain function.**\n\n"
-        "🚰 **Drinking enough water can help prevent headaches and improve focus.**\n\n"
-        "🩺 **Proper hydration supports kidney and heart health.**\n\n"
-        "🥤 **Recommended daily intake: 8 glasses (2 liters) of water per day.**\n\n"
-    )
-    water_articles = (
-        "📚 **More Resources on Hydration:**\n\n"
-        "1️⃣ [Healthline: How Much Water Should You Drink Per Day?](https://www.healthline.com/nutrition/how-much-water-should-you-drink-per-day)\n\n"
-        "2️⃣ [Mayo Clinic: Water: How much should you drink every day?](https://www.mayoclinic.org/healthy-lifestyle/nutrition-and-healthy-eating/in-depth/water/art-20044256)\n\n"
-        "3️⃣ [Medical News Today: 15 benefits of drinking water](https://www.medicalnewstoday.com/articles/290814)"
-    )
-    await message.answer(water_facts + water_articles)
+    await message.answer(WATER_FACTS + WATER_ARTICLES)
 
 async def prompt_frequency(message: Message):
-    keyboard = ReplyKeyboardMarkup(
-        resize_keyboard=True,
-        keyboard=[
-            [KeyboardButton("🐾 Every 2 hours"), KeyboardButton("🐾 Every 4 hours")],
-            [KeyboardButton("🐾 Every 6 hours"), KeyboardButton("🐾 Custom")]
-        ]
-    )
-    await message.answer("🐾 How often would you like to receive water reminders? 🐾", reply_markup=keyboard)
+    keyboard = ReplyKeyboardMarkup(resize_keyboard=True, keyboard=KEYBOARD_OPTIONS)
+    await message.answer(START_MESSAGE, reply_markup=keyboard)
 
 @dp.message(lambda message: message.text.startswith("🐾 Every ") and message.text.split()[-2].isdigit())
 async def handle_frequency_selection(message: Message):
@@ -86,18 +72,18 @@ async def handle_frequency_selection(message: Message):
 
 @dp.message(F.text == "🐾 Custom")
 async def ask_custom_frequency(message: Message):
-    await message.answer("🐾 Please enter the number of hours between reminders (e.g., `3` for every 3 hours). 🐾")
+    await message.answer(CUSTOM_FREQUENCY_PROMPT)
 
 @dp.message(lambda message: message.text.strip().isdigit())
 async def handle_custom_frequency(message: Message):
     chat_id = message.chat.id
     user_input = message.text.strip()
     if not user_input.isdigit():
-        await message.answer("❌ Invalid input. Please enter a number between 1 and 24. 🐾")
+        await message.answer(INVALID_FREQUENCY_MESSAGE)
         return
     custom_frequency = int(user_input)
     if not (1 <= custom_frequency <= 24):
-        await message.answer("❌ Please enter a number between 1 and 24. 🐾")
+        await message.answer(INVALID_FREQUENCY_MESSAGE)
         return
     update_frequency(chat_id, custom_frequency)
     await message.answer(f"✅ You will receive water reminders every {custom_frequency} hours. 🐾")
@@ -125,7 +111,7 @@ async def send_reminders(chat_id):
         return
     try:
         cute_image = await get_cute_image()
-        await bot.send_photo(chat_id, cute_image, caption="💧 Time to drink water! 🐾")
+        await bot.send_photo(chat_id, cute_image, caption=REMINDER_MESSAGE)
         logging.info(f"Sent reminder to {chat_id}")
     except Exception as e:
         logging.error(f"Failed to send reminder: {e}")
