@@ -2,22 +2,21 @@ import asyncio
 import logging
 import os
 import time  # For unique image cache-busting
-import aiohttp
 
+import aiohttp
+from aiocron import crontab
 from aiogram import Bot, Dispatcher, F
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.filters import Command
 from aiogram.types import KeyboardButton, Message, ReplyKeyboardMarkup
 from dotenv import load_dotenv
-from aiocron import crontab
 
-from db import (get_user_status, init_db, save_user,
-                update_frequency, update_status)
-from messages import (
-    START_MESSAGE, STOP_MESSAGE, WATER_FACTS, WATER_ARTICLES,
-    REMINDER_MESSAGE, CUSTOM_FREQUENCY_PROMPT, INVALID_FREQUENCY_MESSAGE, KEYBOARD_OPTIONS
-)
+from db import (get_user_status, init_db, save_user, update_frequency,
+                update_status)
+from messages import (CUSTOM_FREQUENCY_PROMPT, INVALID_FREQUENCY_MESSAGE,
+                      KEYBOARD_OPTIONS, REMINDER_MESSAGE, START_MESSAGE,
+                      STOP_MESSAGE, WATER_ARTICLES, WATER_FACTS)
 
 # Load environment variables
 load_dotenv()

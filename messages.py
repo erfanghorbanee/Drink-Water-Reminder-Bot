@@ -1,3 +1,5 @@
+from aiogram.types import KeyboardButton
+
 # General messages
 START_MESSAGE = "🐾 How often would you like to receive water reminders? 🐾"
 STOP_MESSAGE = "🚫 Water reminders stopped. Stay hydrated though! 🐾"
@@ -24,6 +26,6 @@ INVALID_FREQUENCY_MESSAGE = "❌ Please enter a number between 1 and 24. 🐾"
 
 # Keyboard buttons
 KEYBOARD_OPTIONS = [
-    ["🐾 Every 2 hours", "🐾 Every 4 hours"],
-    ["🐾 Every 6 hours", "🐾 Custom"]
+    [KeyboardButton(text="🐾 Every 2 hours"), KeyboardButton(text="🐾 Every 4 hours")],
+    [KeyboardButton(text="🐾 Every 6 hours"), KeyboardButton(text="🐾 Custom")]
 ]
