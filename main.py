@@ -64,30 +64,34 @@ async def info_command(message: Message):
 async def prompt_frequency(message: Message):
     keyboard = ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text="Every 2 hours")],
-            [KeyboardButton(text="Every 4 hours")],
-            [KeyboardButton(text="Every 6 hours")],
-            [KeyboardButton(text="Custom")]  # New custom button
+            [KeyboardButton(text="🐾 Every 2 hours")],
+            [KeyboardButton(text="🐾 Every 4 hours")],
+            [KeyboardButton(text="🐾 Every 6 hours")],
+            [KeyboardButton(text="🐾 Custom")]
         ],
         resize_keyboard=True
     )
-    await message.answer("How often would you like to receive water reminders?", reply_markup=keyboard)
+    await message.answer("🐾 How often would you like to receive water reminders? 🐾", reply_markup=keyboard)
 
 # Handle frequency selection
-@dp.message(lambda message: message.text in ["Every 2 hours", "Every 4 hours", "Every 6 hours"])
+@dp.message(lambda message: message.text in ["🐾 Every 2 hours", "🐾 Every 4 hours", "🐾 Every 6 hours"])
 async def handle_frequency_selection(message: Message):
     chat_id = message.chat.id
-    frequency_map = {"Every 2 hours": 2, "Every 4 hours": 4, "Every 6 hours": 6}
+    frequency_map = {
+        "🐾 Every 2 hours": 2,
+        "🐾 Every 4 hours": 4,
+        "🐾 Every 6 hours": 6
+    }
     selected_frequency = frequency_map[message.text]
 
     update_frequency(chat_id, selected_frequency)  # Update frequency & reactivate user
-    await message.answer(f"✅ You will receive water reminders every {selected_frequency} hours.")
+    await message.answer(f"✅ You will receive water reminders every {selected_frequency} hours. 🐾")
     asyncio.create_task(send_reminders(chat_id, selected_frequency))
 
 # Handle custom frequency input
-@dp.message(F.text == "Custom")
+@dp.message(F.text == "🐾 Custom")
 async def ask_custom_frequency(message: Message):
-    await message.answer("Please enter the number of hours between reminders (e.g., `3` for every 3 hours).")
+    await message.answer("🐾 Please enter the number of hours between reminders (e.g., `3` for every 3 hours). 🐾")
 
 @dp.message(lambda message: message.text.isdigit())  # Ensures only numbers are accepted
 async def handle_custom_frequency(message: Message):
@@ -113,7 +117,7 @@ async def send_reminders(chat_id, frequency):
             break  # Stop if user disabled reminders
 
         cute_image = await get_cute_image()
-        reminder_text = "💧 Hey hooman! Time to drink some water! Stay hydrated!"
+        reminder_text = "💧 Hey hooman! Time to drink some water! Stay hydrated! 🐾"
 
         await bot.send_photo(chat_id, cute_image, caption=reminder_text)
         await asyncio.sleep(frequency * 3600)  # Send reminders based on frequency
@@ -121,7 +125,7 @@ async def send_reminders(chat_id, frequency):
 # Bot startup
 async def on_startup():
     logging.basicConfig(level=logging.INFO)
-    print("Bot is running...")
+    print("🐾 Bot is running... 🐾")
 
 # Run bot
 async def main():
