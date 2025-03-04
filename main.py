@@ -3,7 +3,7 @@ import logging
 import os
 import random
 
-from aiogram import Bot, Dispatcher
+from aiogram import Bot, Dispatcher, F
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.filters import Command
@@ -45,29 +45,30 @@ async def stop_command(message: Message):
 @dp.message(Command("info"))
 async def info_command(message: Message):
     water_facts = (
-        "💧 Staying hydrated helps maintain energy levels and brain function.",
-        "🚰 Drinking enough water can help prevent headaches and improve focus.",
-        "🩺 Proper hydration supports kidney and heart health.",
-        "🥤 Recommended daily intake: **8 glasses (2 liters)** of water per day."
+        "💧 **Staying hydrated helps maintain energy levels and brain function.**\n\n"
+        "🚰 **Drinking enough water can help prevent headaches and improve focus.**\n\n"
+        "🩺 **Proper hydration supports kidney and heart health.**\n\n"
+        "🥤 **Recommended daily intake: 8 glasses (2 liters) of water per day.**\n\n"
     )
 
     water_articles = (
-        "1️⃣ [Healthline: How Much Water Should You Drink Per Day?](https://www.healthline.com/nutrition/how-much-water-should-you-drink-per-day)",
-        "2️⃣ [Mayo Clinic: Water: How much should you drink every day?](https://www.mayoclinic.org/healthy-lifestyle/nutrition-and-healthy-eating/in-depth/water/art-20044256)",
+        "📚 **More Resources on Hydration:**\n\n"
+        "1️⃣ [Healthline: How Much Water Should You Drink Per Day?](https://www.healthline.com/nutrition/how-much-water-should-you-drink-per-day)\n\n"
+        "2️⃣ [Mayo Clinic: Water: How much should you drink every day?](https://www.mayoclinic.org/healthy-lifestyle/nutrition-and-healthy-eating/in-depth/water/art-20044256)\n\n"
         "3️⃣ [Medical News Today: 15 benefits of drinking water](https://www.medicalnewstoday.com/articles/290814)"
     )
 
-    info_text = "**Why is drinking water important?**\n" + "\n".join(water_facts) + "\n\n" \
-                "**More Resources on Hydration:**\n" + "\n".join(water_articles)
-
-    await message.answer(info_text)
+    await message.answer(water_facts + water_articles)
 
 # Prompt user for reminder frequency
 async def prompt_frequency(message: Message):
     keyboard = ReplyKeyboardMarkup(
-        keyboard=[[KeyboardButton(text="Every 2 hours")],
-                  [KeyboardButton(text="Every 4 hours")],
-                  [KeyboardButton(text="Every 6 hours")]],
+        keyboard=[
+            [KeyboardButton(text="Every 2 hours")],
+            [KeyboardButton(text="Every 4 hours")],
+            [KeyboardButton(text="Every 6 hours")],
+            [KeyboardButton(text="Custom")]  # New custom button
+        ],
         resize_keyboard=True
     )
     await message.answer("How often would you like to receive water reminders?", reply_markup=keyboard)
@@ -82,6 +83,24 @@ async def handle_frequency_selection(message: Message):
     update_frequency(chat_id, selected_frequency)  # Update frequency & reactivate user
     await message.answer(f"✅ You will receive water reminders every {selected_frequency} hours.")
     asyncio.create_task(send_reminders(chat_id, selected_frequency))
+
+# Handle custom frequency input
+@dp.message(F.text == "Custom")
+async def ask_custom_frequency(message: Message):
+    await message.answer("Please enter the number of hours between reminders (e.g., `3` for every 3 hours).")
+
+@dp.message(lambda message: message.text.isdigit())  # Ensures only numbers are accepted
+async def handle_custom_frequency(message: Message):
+    chat_id = message.chat.id
+    custom_frequency = int(message.text)
+
+    if custom_frequency < 1 or custom_frequency > 24:
+        await message.answer("❌ Please enter a number between 1 and 24.")
+        return
+
+    update_frequency(chat_id, custom_frequency)  # Update frequency & reactivate user
+    await message.answer(f"✅ You will receive water reminders every {custom_frequency} hours.")
+    asyncio.create_task(send_reminders(chat_id, custom_frequency))
 
 # Fetch new cat image each time
 async def get_cute_image():
