@@ -13,7 +13,7 @@ from aiogram.types import KeyboardButton, Message, ReplyKeyboardMarkup
 from dotenv import load_dotenv
 
 from db import (get_user_status, init_db, save_user, update_frequency,
-                update_status)
+                get_user_frequency, deactivate_reminders)
 from messages import (CUSTOM_FREQUENCY_PROMPT, INVALID_FREQUENCY_MESSAGE,
                       KEYBOARD_OPTIONS, REMINDER_MESSAGE, START_MESSAGE,
                       STOP_MESSAGE, WATER_ARTICLES, WATER_FACTS)
@@ -50,7 +50,7 @@ async def start_command(message: Message):
 @dp.message(Command("stop"))
 async def stop_command(message: Message):
     chat_id = message.chat.id
-    update_status(chat_id, active=0)
+    deactivate_reminders(chat_id)
     await message.answer(STOP_MESSAGE)
 
 @dp.message(Command("info"))
@@ -65,9 +65,8 @@ async def prompt_frequency(message: Message):
 async def handle_frequency_selection(message: Message):
     chat_id = message.chat.id
     selected_frequency = int(message.text.split()[-2])
-    update_frequency(chat_id, selected_frequency)
-    await message.answer(f"✅ You will receive water reminders every {selected_frequency} hours. 🐾")
     schedule_reminder(chat_id, selected_frequency)
+    await message.answer(f"✅ You will receive water reminders every {selected_frequency} hours. 🐾")
 
 @dp.message(F.text == "🐾 Custom")
 async def ask_custom_frequency(message: Message):
@@ -84,9 +83,8 @@ async def handle_custom_frequency(message: Message):
     if not (1 <= custom_frequency <= 24):
         await message.answer(INVALID_FREQUENCY_MESSAGE)
         return
-    update_frequency(chat_id, custom_frequency)
-    await message.answer(f"✅ You will receive water reminders every {custom_frequency} hours. 🐾")
     schedule_reminder(chat_id, custom_frequency)
+    await message.answer(f"✅ You will receive water reminders every {custom_frequency} hours. 🐾")
 
 async def get_cute_image():
     url = f"{CAT_API}?{int(time.time())}"
@@ -103,17 +101,25 @@ async def get_cute_image():
     return CAT_API
 
 def schedule_reminder(chat_id, frequency):
-    crontab(f"0 */{frequency} * * *", func=send_reminders, args=(chat_id,))
-
-async def send_reminders(chat_id):
-    if get_user_status(chat_id) == 0:
+    """Cancel existing reminder and schedule a new one using the database."""
+    existing_frequency = get_user_frequency(chat_id)
+    if existing_frequency == frequency:
+        logging.info(f"Reminder for chat_id {chat_id} already set at {frequency} hours.")
         return
-    try:
-        cute_image = await get_cute_image()
-        await bot.send_photo(chat_id, cute_image, caption=REMINDER_MESSAGE)
-        logging.info(f"Sent reminder to {chat_id}")
-    except Exception as e:
-        logging.error(f"Failed to send reminder: {e}")
+    update_frequency(chat_id, frequency)
+    logging.info(f"Scheduled new reminder for chat_id {chat_id} every {frequency} hours.")
+    asyncio.create_task(send_reminders(chat_id, frequency))
+
+async def send_reminders(chat_id, frequency):
+    """Send reminders periodically based on the stored frequency."""
+    while get_user_status(chat_id):
+        try:
+            cute_image = await get_cute_image()
+            await bot.send_photo(chat_id, cute_image, caption=REMINDER_MESSAGE)
+            logging.info(f"Sent reminder to {chat_id}: Every {frequency} hours")
+        except Exception as e:
+            logging.error(f"Failed to send reminder to {chat_id}: {e}")
+        await asyncio.sleep(frequency * 3600)  # Wait for the next reminder
 
 async def main():
     await dp.start_polling(bot)
